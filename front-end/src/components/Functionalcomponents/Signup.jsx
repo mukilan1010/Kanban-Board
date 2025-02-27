@@ -23,13 +23,13 @@ const Signup = () => {
     e.preventDefault()
 
     try{
-    const res= await axios.post("https://kanban-board-z99a.onrender.com",{
+    const res= await axios.post("http://localhost:3000/signup",{
       firstName,lastName,email,password,phoneNumber
     });
 
     if(res.status==201){
       alert("Sign up Sucessfull");
-      navigate("/kanbanboard")
+      navigate("/dragdrop")
       
       
     }else{
