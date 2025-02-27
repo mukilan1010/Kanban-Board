@@ -15,7 +15,7 @@ const Login = () => {
 
   const handleLogin=async(e)=>{
     e.preventDefault();
-    const res=await axios.post("http://localhost:3000/Signup",{
+    const res=await axios.post("https://kanban-board-z99a.onrender.com",{
       email,password
     })
 

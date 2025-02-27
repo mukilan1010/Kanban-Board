@@ -23,7 +23,7 @@ const Signup = () => {
     e.preventDefault()
 
     try{
-    const res= await axios.post("http://localhost:3000/Signup",{
+    const res= await axios.post("https://kanban-board-z99a.onrender.com",{
       firstName,lastName,email,password,phoneNumber
     });
 
