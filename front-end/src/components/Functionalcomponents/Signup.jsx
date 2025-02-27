@@ -23,7 +23,7 @@ const Signup = () => {
     e.preventDefault()
 
     try{
-    const res= await axios.post("http://localhost:3000/signup",{
+    const res= await axios.post("https://kanban-board-z99a.onrender.com/signup",{
       firstName,lastName,email,password,phoneNumber
     });
 
@@ -38,7 +38,7 @@ const Signup = () => {
 
 
   }catch(e){
-    console.error("Error:", error);
+    console.error("Error:", e);
     alert("An error occurred. Please check your details and try again.");
   }
     
