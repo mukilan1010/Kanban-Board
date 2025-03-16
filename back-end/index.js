@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const jwt=require("jsonwebtoken")
-require("dotenv").config();
+
 const cors=require("cors");
 const bcrypt=require("bcrypt");
 const mdb = require("mongoose");
