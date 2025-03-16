@@ -19,7 +19,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const res = await axios.post("https://kanban-board-z99a.onrender.com/Login", {
+      const res = await axios.post("http://localhost:3000/Login", {
         email,
         password,
       });

@@ -159,7 +159,7 @@ const DragDrop = () => {
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`https://kanban-board-z99a.onrender.com/getTasks?userEmail=${encodeURIComponent(localStorage.getItem('email'))}`);
+      const response = await fetch(`https://kanban-board-z99a.onrender.com/getTasks?userEmail=${localStorage.getItem('email')}`);
       const data = await response.json();
   
       console.log("Fetched Data:", data);
