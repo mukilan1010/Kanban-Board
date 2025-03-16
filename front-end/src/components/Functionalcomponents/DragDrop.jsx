@@ -183,7 +183,7 @@ const DragDrop = () => {
 
   const handleDeleteItem = async (section, item) => {
     try {
-      const response = await fetch("http://localhost:3000/deleteTask", {
+      const response = await fetch("https://kanban-board-z99a.onrender.com/deleteTask", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
