@@ -80,7 +80,6 @@ mdb
             return res.status(401).json({ message: "Invalid Password", isLogin: false });
         }
 
-        // Generate JWT token
         const token = jwt.sign(
             { userId: user._id },
             process.env.JWT_SECRET,
@@ -98,7 +97,6 @@ mdb
         res.status(500).json({ message: "Error", isLogin: false });
     }
 }); 
-// Add this middleware function to your server.js file
 function authenticateUser(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
     
@@ -114,10 +112,10 @@ function authenticateUser(req, res, next) {
       return res.status(401).json({ error: 'Invalid token' });
     }
   }
-// Profile endpoint
+
 app.get('/profile', authenticateUser, async (req, res) => {
     try {
-      // Use Signup model instead of User since that's what you defined
+      
       const user = await Signup.findById(req.userId).select('-password');
       
       if (!user) {
@@ -139,7 +137,6 @@ app.get("/getTasks", async (req, res) => {
     try {
       const {userEmail} =req.query;
       const tasks = await Task.find({ userEmail });      
-        // Organize tasks into their respective sections
         const sectionData = {
             TODO: [],
             Completed: [],
@@ -148,7 +145,6 @@ app.get("/getTasks", async (req, res) => {
         console.log(tasks)
         tasks.forEach(task => {
             if (sectionData[task.section]) {
-                // Send the full task object instead of just the task string
                 sectionData[task.section].push({
                     name: task.task,
                     due: task.due ? new Date(task.due).toISOString().split('T')[0] : null, description: task.description || ""
@@ -161,6 +157,38 @@ app.get("/getTasks", async (req, res) => {
         console.error("Error fetching tasks:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
+});
+app.get('/searchTasks', async (req, res) => {
+  try {
+    const { term, userEmail } = req.query;
+    
+    if (!term || !userEmail) {
+      return res.status(400).json({ error: 'Search term and user email are required' });
+    }
+    
+    const sections = ['TODO', 'Completed', 'BackLogs'];
+    let allResults = [];
+    
+    for (const section of sections) {
+      const tasks = await Task.find({
+        userEmail: userEmail,
+        section: section,
+        name: { $regex: term, $options: 'i' } // Case-insensitive search
+      });
+      
+      const tasksWithSection = tasks.map(task => ({
+        ...task._doc,
+        section
+      }));
+      
+      allResults = [...allResults, ...tasksWithSection];
+    }
+    
+    res.json({ tasks: allResults });
+  } catch (error) {
+    console.error('Error searching tasks:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 
@@ -180,7 +208,6 @@ app.delete("/deleteTask", async (req, res) => {
   }
 });
 
-// Route to add a comment
 app.post("/addComment", async (req, res) => {
     const { task, comment } = req.body;
     
@@ -238,8 +265,8 @@ app.put("/updateTask", async (req, res) => {
 
   try {
       const updatedTask = await Task.findOneAndUpdate(
-          { task: task, section: fromSection },  // Ensure we find the correct task
-          { section: toSection },  // Update only the section
+          { task: task, section: fromSection },  
+          { section: toSection },  
           { new: true }
       );
 
@@ -287,7 +314,6 @@ app.put("/editTask", async (req, res) => {
         return res.status(404).json({ error: "Task not found" });
       }
   
-      // Also update the task name in the comments collection
       if (oldTask !== newTask) {
         await Comment.updateMany(
           { task: oldTask },
