@@ -73,7 +73,7 @@ const DragDrop = () => {
     if (!draggedItem) return;
 
     try {
-      const response = await fetch("http://localhost:3000/updateTask", {
+      const response = await fetch("https://kanban-board-z99a.onrender.com/updateTask", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -135,7 +135,7 @@ const DragDrop = () => {
     try {
       console.log(userDetail)
       console.log(localStorage.getItem('email'));
-      const response = await fetch("http://localhost:3000/addTask", {
+      const response = await fetch("https://kanban-board-z99a.onrender.com/addTask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task: newItem, due: dueDate,description: taskDescription, section: "TODO",userEmail:localStorage.getItem('email') }),
@@ -159,7 +159,7 @@ const DragDrop = () => {
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/getTasks?userEmail=${encodeURIComponent(localStorage.getItem('email'))}`);
+      const response = await fetch(`https://kanban-board-z99a.onrender.com/getTasks?userEmail=${encodeURIComponent(localStorage.getItem('email'))}`);
       const data = await response.json();
   
       console.log("Fetched Data:", data);
@@ -218,7 +218,7 @@ const DragDrop = () => {
     if (editedText.trim() === "") return;
 
     try {
-      const response = await fetch("http://localhost:3000/editTask", {
+      const response = await fetch("https://kanban-board-z99a.onrender.com/editTask", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -286,7 +286,7 @@ const DragDrop = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/getComments?task=${encodeURIComponent(taskName)}`
+        `https://kanban-board-z99a.onrender.com/getComments?task=${encodeURIComponent(taskName)}`
       );
       const data = await response.json();
       if (response.ok) {
@@ -309,7 +309,7 @@ const DragDrop = () => {
       typeof selectedTask === "object" ? selectedTask.name : selectedTask;
 
     try {
-      const response = await fetch("http://localhost:3000/addComment", {
+      const response = await fetch("https://kanban-board-z99a.onrender.com/addComment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -345,7 +345,7 @@ const DragDrop = () => {
     const updatedName = editedText;
 
     try {
-      const response = await fetch("http://localhost:3000/editTask", {
+      const response = await fetch("https://kanban-board-z99a.onrender.com/editTask", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -377,7 +377,7 @@ const DragDrop = () => {
     const section = selectedTask.section;
     
     try {
-      const response = await fetch("http://localhost:3000/deleteTask", {
+      const response = await fetch("https://kanban-board-z99a.onrender.com/deleteTask", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
