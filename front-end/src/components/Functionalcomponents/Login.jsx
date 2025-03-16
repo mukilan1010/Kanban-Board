@@ -5,6 +5,9 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { UserContext } from "../../App";
+import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 
 
 const Login = () => {
@@ -31,7 +34,7 @@ const Login = () => {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
-        alert("Login Successful");
+        toast("Login Successfull");
         console.log("Login Successful");
 
         // Redirect user after successful login
@@ -58,6 +61,7 @@ const Login = () => {
 
   return (
     <div className="login-container">
+      <ToastContainer position="top-right" autoClose={2000} />
       <div className="login-box">
         <h2>Login to Kanban</h2>
         <form>

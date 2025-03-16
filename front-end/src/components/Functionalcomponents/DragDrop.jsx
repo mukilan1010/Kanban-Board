@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   FaTrash,
   FaEdit,
@@ -20,9 +20,9 @@ const DragDrop = () => {
     Completed: [],
     BackLogs: [],
   });
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const [taskDescription, setTaskDescription] = useState(""); 
+  const [taskDescription, setTaskDescription] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
   const [newItem, setNewItem] = useState("");
@@ -35,7 +35,11 @@ const DragDrop = () => {
   const [taskComment, setTaskComment] = useState("");
   const [comments, setComments] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // Toggle profile dropdown
   const toggleProfileDropdown = () => {
@@ -44,17 +48,15 @@ const DragDrop = () => {
 
   // Handle logout
   const handleLogout = () => {
-  
     localStorage.removeItem("token");
     navigate("/");
   };
 
-  // Handle navigate to profile page
   const navigateToProfile = () => {
     navigate("/profile");
     setIsProfileOpen(false);
   };
-  // Make sure handleAddItem is defined properly
+  
   const handleAddItem = () => {
     setIsPopupOpen(true);
   };
@@ -73,15 +75,18 @@ const DragDrop = () => {
     if (!draggedItem) return;
 
     try {
-      const response = await fetch("https://kanban-board-fjzt.vercel.app/updateTask", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: draggedItem.item.name || draggedItem.item, // Handle both formats
-          fromSection: draggedItem.fromSection,
-          toSection: toSection,
-        }),
-      });
+      const response = await fetch(
+        "https://kanban-board-fjzt.vercel.app/updateTask",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: draggedItem.item.name || draggedItem.item, 
+            fromSection: draggedItem.fromSection,
+            toSection: toSection,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok) {
@@ -116,7 +121,7 @@ const DragDrop = () => {
   const handleSaveTask = async () => {
     if (newItem.trim() === "") return;
 
-    // Check if the task already exists
+
     const taskExists =
       sections["TODO"] &&
       sections["TODO"].some((item) => {
@@ -126,27 +131,36 @@ const DragDrop = () => {
       });
 
     if (taskExists) {
-      toast("The task is already in todo")
+      toast("The task is already in todo");
       setNewItem("");
       setDueDate("");
       return;
     }
 
     try {
-      console.log(userDetail)
-      console.log(localStorage.getItem('email'));
-      const response = await fetch("https://kanban-board-fjzt.vercel.app/addTask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task: newItem, due: dueDate,description: taskDescription, section: "TODO",userEmail:localStorage.getItem('email') }),
-      });
+      console.log(userDetail);
+      console.log(localStorage.getItem("email"));
+      const response = await fetch(
+        "https://kanban-board-fjzt.vercel.app/addTask",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: newItem,
+            due: dueDate,
+            description: taskDescription,
+            section: "TODO",
+            userEmail: localStorage.getItem("email"),
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok) {
         alert(data.error);
         return;
-      }`x`
-      toast("Task added successfully!")
+      }
+      toast("Task added successfully!");
       setNewItem("");
       setDueDate("");
       setIsPopupOpen(false);
@@ -155,15 +169,95 @@ const DragDrop = () => {
       console.error("Error adding task:", error);
     }
   };
+  const handleSearch = (term) => {
+    if (!term.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const results = [];
+    const lowercaseTerm = term.toLowerCase();
+
+    Object.entries(sections).forEach(([sectionName, tasks]) => {
+      tasks.forEach((task) => {
+        const taskName =
+          typeof task === "object"
+            ? task.name.toLowerCase()
+            : task.toLowerCase();
+        if (taskName.includes(lowercaseTerm)) {
+          results.push({
+            ...task,
+            section: sectionName,
+          });
+        }
+      });
+    });
+
+    setSearchResults(results);
+    setShowDropdown(results.length > 0);
+  };
+
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  const debouncedSearch = useCallback(
+    debounce((term) => handleSearch(term), 300),
+    [sections]
+  );
+
+  const handleSearchInputChange = (e) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+    debouncedSearch(term);
+  };
+
+  const handleSearchResultClick = (result) => {
+    const section = result.section;
+    const taskName = typeof result === "object" ? result.name : result;
+
+    const task = sections[section].find((item) =>
+      typeof item === "object" ? item.name === taskName : item === taskName
+    );
+
+    if (task) {
+      handleTaskClick(task, section);
+    }
+    setSearchTerm("");
+    setSearchResults([]);
+    setShowDropdown(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".search-container")) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`https://kanban-board-fjzt.vercel.app/getTasks?userEmail=${localStorage.getItem('email')}`);
+      const response = await fetch(
+        `https://kanban-board-fjzt.vercel.app/getTasks?userEmail=${localStorage.getItem(
+          "email"
+        )}`
+      );
       const data = await response.json();
-  
+
       console.log("Fetched Data:", data);
-  
+
       setSections({
         TODO: data.TODO || [],
         Completed: data.Completed || [],
@@ -175,7 +269,6 @@ const DragDrop = () => {
       setIsLoading(false);
     }
   };
-  
 
   useEffect(() => {
     fetchTasks();
@@ -183,13 +276,16 @@ const DragDrop = () => {
 
   const handleDeleteItem = async (section, item) => {
     try {
-      const response = await fetch("https://kanban-board-fjzt.vercel.app/deleteTask", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: typeof item === "object" ? item.name : item,
-        }),
-      });
+      const response = await fetch(
+        "https://kanban-board-fjzt.vercel.app/deleteTask",
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: typeof item === "object" ? item.name : item,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok) {
@@ -218,15 +314,18 @@ const DragDrop = () => {
     if (editedText.trim() === "") return;
 
     try {
-      const response = await fetch("https://kanban-board-fjzt.vercel.app/editTask", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          oldTask: typeof oldTask === "object" ? oldTask.name : oldTask,
-          newTask: editedText,
-          section: "TODO",
-        }),
-      });
+      const response = await fetch(
+        "https://kanban-board-fjzt.vercel.app/editTask",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            oldTask: typeof oldTask === "object" ? oldTask.name : oldTask,
+            newTask: editedText,
+            section: "TODO",
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok) {
@@ -244,20 +343,17 @@ const DragDrop = () => {
 
       setEditingItem(null);
       setEditedText("");
-      fetchTasks(); // Refresh the tasks
+      fetchTasks();
     } catch (error) {
       console.error("Error updating task:", error);
     }
   };
 
-  // new
   const handleTaskClick = (item, section) => {
-   
     if (editingItem || draggedItem) return;
 
     const taskName = typeof item === "object" ? item.name : item;
 
- 
     setSelectedTask({
       name: taskName,
       due: typeof item === "object" ? item.due : null,
@@ -267,10 +363,11 @@ const DragDrop = () => {
 
     setEditedText(taskName);
     setDueDate(typeof item === "object" && item.due ? item.due : "");
-    setTaskDescription(typeof item === "object" && item.description ? item.description : "");
+    setTaskDescription(
+      typeof item === "object" && item.description ? item.description : ""
+    );
     setIsTaskDetailOpen(true);
 
-    // Fetch comments for this task
     if (taskName) {
       fetchComments(taskName);
     } else {
@@ -286,7 +383,9 @@ const DragDrop = () => {
 
     try {
       const response = await fetch(
-        `https://kanban-board-fjzt.vercel.app/getComments?task=${encodeURIComponent(taskName)}`
+        `https://kanban-board-fjzt.vercel.app/getComments?task=${encodeURIComponent(
+          taskName
+        )}`
       );
       const data = await response.json();
       if (response.ok) {
@@ -309,17 +408,19 @@ const DragDrop = () => {
       typeof selectedTask === "object" ? selectedTask.name : selectedTask;
 
     try {
-      const response = await fetch("https://kanban-board-fjzt.vercel.app/addComment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: taskName,
-          comment: taskComment,
-        }),
-      });
+      const response = await fetch(
+        "https://kanban-board-fjzt.vercel.app/addComment",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: taskName,
+            comment: taskComment,
+          }),
+        }
+      );
 
       if (response.ok) {
-        // Update the local comments state
         setComments((prevComments) => ({
           ...prevComments,
           [taskName]: [...(prevComments[taskName] || []), taskComment],
@@ -345,17 +446,20 @@ const DragDrop = () => {
     const updatedName = editedText;
 
     try {
-      const response = await fetch("https://kanban-board-fjzt.vercel.app/editTask", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          oldTask: taskName,
-          newTask: updatedName,
-          due: dueDate,
-          description: taskDescription,
-          section: selectedTask.section,
-        }),
-      });
+      const response = await fetch(
+        "https://kanban-board-fjzt.vercel.app/editTask",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            oldTask: taskName,
+            newTask: updatedName,
+            due: dueDate,
+            description: taskDescription,
+            section: selectedTask.section,
+          }),
+        }
+      );
 
       if (response.ok) {
         setIsTaskDetailOpen(false);
@@ -364,7 +468,7 @@ const DragDrop = () => {
         setDueDate("");
         setTaskDescription("");
         fetchTasks();
-        toast("Task upadated successfully")
+        toast("Task upadated successfully");
       }
     } catch (error) {
       console.error("Error updating task:", error);
@@ -372,119 +476,143 @@ const DragDrop = () => {
   };
   const handleDeleteTaskFromDetail = async () => {
     if (!selectedTask) return;
-    
-    const taskName = typeof selectedTask === "object" ? selectedTask.name : selectedTask;
+
+    const taskName =
+      typeof selectedTask === "object" ? selectedTask.name : selectedTask;
     const section = selectedTask.section;
-    
+
     try {
-      const response = await fetch("https://kanban-board-fjzt.vercel.app/deleteTask", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: taskName
-        }),
-      });
-  
+      const response = await fetch(
+        "https://kanban-board-fjzt.vercel.app/deleteTask",
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: taskName,
+          }),
+        }
+      );
+
       const data = await response.json();
       if (!response.ok) {
         alert(data.error);
         return;
       }
-  
-      // Remove from UI
+
+     
       setSections((prevSections) => {
         const updatedSections = { ...prevSections };
-        updatedSections[section] = updatedSections[section].filter(
-          (task) => {
-            const taskValue = typeof task === "object" ? task.name : task;
-            return taskValue !== taskName;
-          }
-        );
+        updatedSections[section] = updatedSections[section].filter((task) => {
+          const taskValue = typeof task === "object" ? task.name : task;
+          return taskValue !== taskName;
+        });
         return updatedSections;
       });
-      
-      // Close the detail popup
+
+    
       setIsTaskDetailOpen(false);
       setSelectedTask(null);
       toast.success("Successfully deleted", { autoClose: 2000 });
-    
-      
     } catch (error) {
       console.error("Error deleting task:", error);
     }
   };
 
   return (
-    
     <div className="drag-drop-container">
       <ToastContainer position="top-right" autoClose={2000} />
-      
+
       <div className="header">
         <h1>Kanban Board</h1>
         <div
-      className="profile-container"
-      onMouseEnter={() => setIsProfileOpen(true)}
-      onMouseLeave={() => setIsProfileOpen(false)}
-    >
-      <div className="profile-icon">
-        <FaUserCircle size={24} />
-      </div>
-      {isProfileOpen && (
-        <div className="profile-dropdown">
-          <button onClick={navigateToProfile}>My Profile</button>
-          <button onClick={handleLogout}>Logout</button>
+          className="profile-container"
+          onMouseEnter={() => setIsProfileOpen(true)}
+          onMouseLeave={() => setIsProfileOpen(false)}
+        >
+          <div className="profile-icon">
+            <FaUserCircle size={24} />
+          </div>
+          {isProfileOpen && (
+            <div className="profile-dropdown">
+              <button onClick={navigateToProfile}>My Profile</button>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
       </div>
       <div className="input-container">
-  <button onClick={handleAddItem} className="add-task-btn">
-    Add TASK
-  </button>
-</div>
+        <button onClick={handleAddItem} className="add-task-btn">
+          Add TASK
+        </button>
+        <div className="search-container" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearchInputChange}
+            placeholder="Search tasks..."
+            className="search-input"
+          />
+          {showDropdown && searchResults.length > 0 && (
+            <div className="search-dropdown">
+              {searchResults.map((task, index) => (
+                <div
+                  key={index}
+                  className="search-result-item"
+                  onClick={() => handleSearchResultClick(task)}
+                >
+                  <span>{typeof task === "object" ? task.name : task}</span>
+                  {typeof task === "object" && task.section && (
+                    <span className="result-section">{task.section}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-{isPopupOpen && (
-  <div className="popup-overlay">
-    <div className="popup-box">
-      <h2>Add Task</h2>
-      <div className="form-group">
-        <label className="task-label task-name-label">Task Name</label>
-        <input
-          type="text"
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          placeholder="Enter task name"
-        />
-      </div>
-      
-      <div className="form-group">
-        <label className="task-label task-date-label">Due Date</label>
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
-      </div>
-      
-      <div className="form-group">
-        <label className="task-label task-desc-label">Description</label>
-        <textarea
-          value={taskDescription}
-          onChange={(e) => setTaskDescription(e.target.value)}
-          placeholder="Enter task description"
-          className="task-description"
-        />
-      </div>
-      
-      <div className="popup-buttons">
-        <button onClick={handleClosePopup}>Cancel</button>
-        <button onClick={handleSaveTask}>Add Task</button>
-      </div>
-    </div>
-  </div>
-)}
+      {isPopupOpen && (
+        <div className="popup-overlay">
+          <div className="popup-box">
+            <h2>Add Task</h2>
+            <div className="form-group">
+              <label className="task-label task-name-label">Task Name</label>
+              <input
+                type="text"
+                value={newItem}
+                onChange={(e) => setNewItem(e.target.value)}
+                placeholder="Enter task name"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="task-label task-date-label">Due Date</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="task-label task-desc-label">Description</label>
+              <textarea
+                value={taskDescription}
+                onChange={(e) => setTaskDescription(e.target.value)}
+                placeholder="Enter task description"
+                className="task-description"
+              />
+            </div>
+
+            <div className="popup-buttons">
+              <button onClick={handleClosePopup}>Cancel</button>
+              <button onClick={handleSaveTask}>Add Task</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Task Detail Popup */}
-      
+
       {isTaskDetailOpen && selectedTask && (
         <div className="popup-overlay">
           <div className="popup-box task-detail-popup">
@@ -515,26 +643,28 @@ const DragDrop = () => {
                 }
                 onChange={(e) => setDueDate(e.target.value)}
               />
-               <label>Description:</label>
-        <textarea
-          value={
-            taskDescription ||
-            (typeof selectedTask === "object" && selectedTask.description
-              ? selectedTask.description
-              : "")
-          }
-          onChange={(e) => setTaskDescription(e.target.value)}
-          placeholder="Enter task description..."
-          className="task-description"
-        />
+              <label>Description:</label>
+              <textarea
+                value={
+                  taskDescription ||
+                  (typeof selectedTask === "object" && selectedTask.description
+                    ? selectedTask.description
+                    : "")
+                }
+                onChange={(e) => setTaskDescription(e.target.value)}
+                placeholder="Enter task description..."
+                className="task-description"
+              />
 
               <button onClick={handleUpdateTask} className="update-task-btn">
                 Update Task
               </button>
-              <button onClick={handleDeleteTaskFromDetail} className="delete-task-btn">
-      Delete Task
-    </button>
-             
+              <button
+                onClick={handleDeleteTaskFromDetail}
+                className="delete-task-btn"
+              >
+                Delete Task
+              </button>
             </div>
 
             <div className="task-comments-section">
@@ -586,11 +716,18 @@ const DragDrop = () => {
           onDragOver={(e) => e.preventDefault()}
           onDrop={() => handleDrop(section)}
         >
-          <h2 className="section-title">{section.toUpperCase()}</h2>
-          {sections[section].length === 0 ? (
+           <h2 className="section-title">
+      {section === "Completed" ? "INPROGRESS" : 
+       section === "BackLogs" ? "COMPLETED" : 
+       section.toUpperCase()}
+    </h2>
+          {(isSearching ? filteredSections[section] : sections[section])
+            .length === 0 ? (
             <div className="empty-container">
               <p className="empty-message">
-                {section === "TODO"
+                {isSearching
+                  ? "No matching tasks found."
+                  : section === "TODO"
                   ? "No tasks to do! Add one to get started."
                   : section === "Completed"
                   ? "No completed tasks yet! Keep going!"
@@ -598,51 +735,61 @@ const DragDrop = () => {
               </p>
             </div>
           ) : (
-            sections[section].map((item, index) => (
-              <div
-                key={index}
-                draggable
-                onDragStart={() => handleDragStart(item, section)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => handleDrop(section, index)}
-                onClick={() => handleTaskClick(item, section)}
-                className={`draggable-item ${
-                  draggedItem?.item === item ? "dragging" : ""
-                } ${section === "Completed" ? "completed-task" : ""} ${
-                  section === "BackLogs" ? "back-task" : ""
-                }`}
-              >
-                {editingItem === item ? (
-                  <>
-                    
-                    <FaCheck
-                      className="save-icon"
-                      onClick={() => handleSaveEdit(item)}
-                    />
-                    <FaTimes
-                      className="cancel-icon"
-                      onClick={() => setEditingItem(null)}
-                    />
-                  </>
-                ) : (
-                  <>
-                    {typeof item === "object" ? (
-                      <>
-                        <span>{item.name}</span>
-                        {item.due && (
-                          <span className="due-date"> (Due: {item.due})</span>
-                        )}
-                      </>
-                    ) : (
-                      <span>{item}</span>
-                    )}
-
-                   
-                   
-                  </>
-                )}
-              </div>
-            ))
+            (isSearching ? filteredSections[section] : sections[section]).map(
+              (item, index) => (
+                <div
+                  key={index}
+                  draggable
+                  onDragStart={() => handleDragStart(item, section)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(section, index)}
+                  onClick={() => handleTaskClick(item, section)}
+                  className={`draggable-item ${
+                    draggedItem?.item === item ? "dragging" : ""
+                  } ${section === "Completed" ? "completed-task" : ""} ${
+                    section === "BackLogs" ? "back-task" : ""
+                  }`}
+                >
+                  {editingItem === item ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editedText}
+                        onChange={(e) => setEditedText(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <FaCheck
+                        className="save-icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveEdit(item);
+                        }}
+                      />
+                      <FaTimes
+                        className="cancel-icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingItem(null);
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {typeof item === "object" ? (
+                        <>
+                          <span>{item.name}</span>
+                          {item.due && (
+                            <span className="due-date"> (Due: {item.due})</span>
+                          )}
+                        </>
+                      ) : (
+                        <span>{item}</span>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            )
           )}
         </div>
       ))}

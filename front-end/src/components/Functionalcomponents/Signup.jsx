@@ -2,7 +2,9 @@ import "../css/Signup.css"
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
-
+import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import { Link, Navigate } from "react-router-dom";
 
 const Signup = () => {
@@ -26,6 +28,7 @@ const Signup = () => {
     if(res.status==201){
       console.log("Succedd")
       alert("Sign up Sucessfull");
+      toast("Signup successfull");
       
       navigate("/")
     }
@@ -48,6 +51,7 @@ const Signup = () => {
 
   return (
     <div className="signup-container">
+      <ToastContainer position="top-right"  autoClose={2000}/>
       <div className="signup-box">
         <h2>Signup for Kanban</h2>
         <form>

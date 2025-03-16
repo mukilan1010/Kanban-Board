@@ -35,7 +35,7 @@
 .navigate-back-button {
   display: flex;
   align-items: center;
-  background-color: #4CAF50;
+  background-color: #3b89c8;
   color: white;
   padding: 0.5rem 1rem;
   border: none;
@@ -46,7 +46,7 @@
 }
 
 .navigate-back-button:hover {
-  background-color: #45a049;
+  background-color: #040450;
 }
 
 .navigate-back-button svg {
@@ -63,7 +63,7 @@
 .user-avatar-circle {
   width: 80px;
   height: 80px;
-  background-color: #4CAF50;
+  background-color: #1f599b;
   color: white;
   font-size: 2rem;
   font-weight: bold;
@@ -90,7 +90,7 @@
 
 .user-profile-icon {
   font-size: 1.5rem;
-  color: #4CAF50;
+  color: #287d83;
   margin-right: 10px;
 }
 
