@@ -1,33 +1,30 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css';
+import { useState, createContext } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './components/Functionalcomponents/Login';
-import NavBar from './components/Functionalcomponents/NavBar';
 import Signup from './components/Functionalcomponents/Signup';
-import{BrowserRouter,Routes,Route} from "react-router-dom";
 import DragDrop from './components/Functionalcomponents/DragDrop';
+import Profile from './components/Functionalcomponents/Profile';
+import { ToastContainer } from 'react-toastify';
 
+// Create Context
+export const UserContext = createContext();
 
 function App() {
- 
+  const [userDetail, setUserDetail] = useState(null);
 
   return (
-
-    <main>
-      {/* <DragDrop/> */}
-      
+    <UserContext.Provider value={{ userDetail, setUserDetail }}>
       <BrowserRouter>
-      <NavBar/>
-      <Routes>
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/dragdrop" element={<DragDrop />} />
-
-      </Routes>
+        <Routes>
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<Login />} />
+          <Route path="/dragdrop" element={<DragDrop />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
       </BrowserRouter>
-    </main>
-  )
+      <ToastContainer />
+    </UserContext.Provider>
+  );
 }
 
-export default App
+export default App;

@@ -5,8 +5,6 @@ import { useNavigate } from "react-router-dom";
 
 import { Link, Navigate } from "react-router-dom";
 
-
-
 const Signup = () => {
   const navigate = useNavigate();
 
@@ -16,30 +14,33 @@ const Signup = () => {
   const [password,setpass]=useState("");
   const [phoneNumber,setphone]=useState(0);
 
-
-
-
   const handleSignup=async(e)=>{
     e.preventDefault()
 
     try{
-    const res= await axios.post("https://kanban-board-z99a.onrender.com/signup",{
+    const res= await axios.post("http://localhost:3000/signup",{
       firstName,lastName,email,password,phoneNumber
     });
 
     if(res.status==201){
+      console.log("Succedd")
       alert("Sign up Sucessfull");
-      navigate("/dragdrop")
       
-      
-    }else{
+      navigate("/")
+    }
+    else{
       alert("Sign up Failed");
     }
 
 
   }catch(e){
+    if (e.response && e.response.status === 409) {
+      alert("User already exists. Please log in.");
+      navigate('/login')
+    }else{
     console.error("Error:", e);
     alert("An error occurred. Please check your details and try again.");
+    }
   }
     
   }

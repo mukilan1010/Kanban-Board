@@ -1,4 +1,3 @@
-/* Center the signup box */
 .signup-container {
     display: flex;
     justify-content: center;
@@ -7,7 +6,6 @@
     background-color: #f4f4f4;
   }
   
-  /* Style the signup box */
   .signup-box {
     background: white;
     padding: 20px;
@@ -17,7 +15,6 @@
     text-align: center;
   }
   
-  /* Input group styles */
   .input-group {
     margin-bottom: 15px;
     text-align: left;
@@ -36,7 +33,6 @@
     border-radius: 5px;
   }
   
-  /* Signup button styles */
   .signup-btn {
     width: 100%;
     padding: 10px;
