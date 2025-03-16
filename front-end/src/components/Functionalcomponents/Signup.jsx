@@ -19,7 +19,7 @@ const Signup = () => {
     e.preventDefault()
 
     try{
-    const res= await axios.post("https://kanban-board-ruddy-five.vercel.app/signup",{
+    const res= await axios.post("https://kanban-board-z99a.onrender.com/signup",{
       firstName,lastName,email,password,phoneNumber
     });
 
