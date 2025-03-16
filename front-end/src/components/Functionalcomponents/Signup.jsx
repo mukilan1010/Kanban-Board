@@ -14,11 +14,12 @@ const Signup = () => {
   const [password,setpass]=useState("");
   const [phoneNumber,setphone]=useState(0);
 
+  
   const handleSignup=async(e)=>{
     e.preventDefault()
 
     try{
-    const res= await axios.post("http://localhost:3000/signup",{
+    const res= await axios.post("https://kanban-board-ruddy-five.vercel.app/signup",{
       firstName,lastName,email,password,phoneNumber
     });
 

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { UserContext } from "../../App";
 
+
 const Login = () => {
   const navigate = useNavigate();
   const { userDetail, setUserDetail } = useContext(UserContext);
@@ -18,7 +19,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:3000/Login", {
+      const res = await axios.post("https://kanban-board-ruddy-five.vercel.app/Login", {
         email,
         password,
       });

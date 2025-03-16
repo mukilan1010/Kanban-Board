@@ -6,7 +6,6 @@ import DragDrop from './components/Functionalcomponents/DragDrop';
 import Profile from './components/Functionalcomponents/Profile';
 import { ToastContainer } from 'react-toastify';
 
-// Create Context
 export const UserContext = createContext();
 
 function App() {
