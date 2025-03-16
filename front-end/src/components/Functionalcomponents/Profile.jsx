@@ -24,7 +24,7 @@ const Profile = () => {
           setLoading(false);
           return;
         }
-        const response = await axios.get('http://localhost:3000/profile', {
+        const response = await axios.get('https://kanban-board-fjzt.vercel.app/profile', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUserProfile(response.data);
