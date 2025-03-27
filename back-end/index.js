@@ -1,7 +1,5 @@
 const express = require("express");
 const app = express();
-const jwt=require("jsonwebtoken")
-
 const cors=require("cors");
 const bcrypt=require("bcrypt");
 const mdb = require("mongoose");
@@ -9,6 +7,18 @@ const dotenv = require("dotenv");
 const Signup = require("./models/SignupScheme.js");
 const SectionModel = require("./models/SectionModel.js");
 const mongoose = require("mongoose");
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+
+
 
 app.use(cors())
 app.use(express.json());
@@ -32,7 +42,82 @@ mdb
   });
   
   const Comment = mongoose.model("Comment", commentSchema);
-
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'));
+      }
+    }
+  });
+  
+  app.post('/upload-profile-image', upload.single('image'), async (req, res) => {
+    try {
+      // Log incoming request details
+      console.log('Profile Image Upload Request:');
+      console.log('Email:', req.body.email);
+      console.log('File:', req.file ? req.file.originalname : 'No file');
+  
+      const { email } = req.body;
+      
+      // Validate email
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+  
+      // Find the user
+      const user = await Signup.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Validate file upload
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+  
+      // Upload image to Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { 
+            folder: 'profile_images',
+            transformation: [
+              { width: 300, height: 300, crop: 'fill' }
+            ]
+          }, 
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        
+        uploadStream.end(req.file.buffer);
+      });
+  
+      // Update user profile
+      user.profileImage = uploadResult.secure_url;
+      await user.save();
+  
+      // Respond with success
+      res.status(200).json({ 
+        message: 'Profile image uploaded successfully',
+        imageUrl: uploadResult.secure_url 
+      });
+  
+    } catch (error) {
+      console.error('Profile image upload error:', error);
+      res.status(500).json({ 
+        message: 'Failed to upload profile image', 
+        error: error.message 
+      });
+    }
+  });
 
   app.post("/signup",async(req,res)=>{
     try{
@@ -80,59 +165,40 @@ mdb
             return res.status(401).json({ message: "Invalid Password", isLogin: false });
         }
 
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
 
         console.log("Login Successful");
         res.status(200).json({ 
             message: "Login Successful", 
             isLogin: true,
-            token: token 
+         
         });
     } catch (error) {
         console.error("Login Error:", error);
         res.status(500).json({ message: "Error", isLogin: false });
     }
 }); 
-function authenticateUser(req, res, next) {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-  
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.userId = decoded.userId;
-      next();
-    } catch (error) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-  }
 
-app.get('/profile', authenticateUser, async (req, res) => {
-    try {
-      
-      const user = await Signup.findById(req.userId).select('-password');
-      
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      
-      res.status(200).json({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phoneNumber: user.phoneNumber
-      });
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      res.status(500).json({ error: 'Server error' });
+app.get('/profile', async (req, res) => {
+  try {
+    const user = await Signup.findById(req.userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
+    
+    res.status(200).json({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      profileImage: user.profileImage || null
+    });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
+
 app.get("/getTasks", async (req, res) => {
     try {
       const {userEmail} =req.query;
@@ -162,10 +228,6 @@ app.get('/searchTasks', async (req, res) => {
   try {
     const { term, userEmail } = req.query;
     
-    if (!term || !userEmail) {
-      return res.status(400).json({ error: 'Search term and user email are required' });
-    }
-    
     const sections = ['TODO', 'Completed', 'BackLogs'];
     let allResults = [];
     
@@ -173,7 +235,7 @@ app.get('/searchTasks', async (req, res) => {
       const tasks = await Task.find({
         userEmail: userEmail,
         section: section,
-        name: { $regex: term, $options: 'i' } // Case-insensitive search
+        name: { $regex: term, $options: 'i' }
       });
       
       const tasksWithSection = tasks.map(task => ({
