@@ -7,7 +7,6 @@ import { useContext } from "react";
 import { UserContext } from "../../App";
 
 
-
 const Login = () => {
   const navigate = useNavigate();
   const { userDetail, setUserDetail } = useContext(UserContext);
