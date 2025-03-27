@@ -7,30 +7,8 @@ const dotenv = require("dotenv");
 const Signup = require("./models/SignupScheme.js");
 const SectionModel = require("./models/SectionModel.js");
 const mongoose = require("mongoose");
-const multer = require('multer');
-const jwt = require('jsonwebtoken');
-const cloudinary = require('cloudinary').v2;
 
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-
-
-
-app.use(cors({
-  origin: [
-    'https://kanban-board-fjzt.vercel.app', 
-    'http://localhost:3000',  // For local development
-    'http://localhost:5173'   // Common Vite dev port
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
+app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -52,117 +30,7 @@ mdb
   });
   
   const Comment = mongoose.model("Comment", commentSchema);
-  
-  const authenticateToken = (req, res, next) => {
-    // Extract the Authorization header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-  
-    // Check if token exists
-    if (!token) {
-      console.log('No token provided');
-      return res.status(401).json({ error: 'No token provided' });
-    }
-  
-    // Verify the token
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        // Log specific error details
-        console.error('Token verification error:', err.message);
-        
-        if (err.name === 'TokenExpiredError') {
-          return res.status(403).json({ error: 'Token expired' });
-        }
-        
-        return res.status(403).json({ error: 'Invalid token' });
-      }
-  
-      // Attach the decoded user information to the request
-      req.userId = decoded.id;
-      req.userEmail = decoded.email;
-      next();
-    });
-  };
-  
 
-
-
-  const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB limit
-    },
-    fileFilter: (req, file, cb) => {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-      if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.'));
-      }
-    }
-  });
-  
-  app.post('/upload-profile-image', upload.single('image'), async (req, res) => {
-    try {
-      // Log incoming request details
-      console.log('Profile Image Upload Request:');
-      console.log('Email:', req.body.email);
-      console.log('File:', req.file ? req.file.originalname : 'No file');
-  
-      const { email } = req.body;
-      
-      // Validate email
-      if (!email) {
-        return res.status(400).json({ message: 'Email is required' });
-      }
-  
-      // Find the user
-      const user = await Signup.findOne({ email });
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-  
-      // Validate file upload
-      if (!req.file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-      }
-  
-      // Upload image to Cloudinary
-      const uploadResult = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { 
-            folder: 'profile_images',
-            transformation: [
-              { width: 300, height: 300, crop: 'fill' }
-            ]
-          }, 
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        
-        uploadStream.end(req.file.buffer);
-      });
-  
-      // Update user profile
-      user.profileImage = uploadResult.secure_url;
-      await user.save();
-  
-      // Respond with success
-      res.status(200).json({ 
-        message: 'Profile image uploaded successfully',
-        imageUrl: uploadResult.secure_url 
-      });
-  
-    } catch (error) {
-      console.error('Profile image upload error:', error);
-      res.status(500).json({ 
-        message: 'Failed to upload profile image', 
-        error: error.message 
-      });
-    }
-  });
 
   app.post("/signup",async(req,res)=>{
     try{
@@ -223,27 +91,26 @@ mdb
     }
 }); 
 
-app.get('/profile', authenticateToken, async (req, res) => {
-  try {
-    const user = await Signup.findById(req.userId).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+app.get('/profile', async (req, res) => {
+    try {
+      
+      const user = await Signup.findById(req.userId).select('-password');
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.status(200).json({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phoneNumber: user.phoneNumber
+      });
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      res.status(500).json({ error: 'Server error' });
     }
-    
-    res.status(200).json({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      profileImage: user.profileImage || null
-    });
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
 });
-
 app.get("/getTasks", async (req, res) => {
     try {
       const {userEmail} =req.query;
