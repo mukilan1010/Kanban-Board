@@ -52,22 +52,41 @@ mdb
   });
   
   const Comment = mongoose.model("Comment", commentSchema);
+  
   const authenticateToken = (req, res, next) => {
+    // Extract the Authorization header
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
   
-    if (token == null) {
+    // Check if token exists
+    if (!token) {
+      console.log('No token provided');
       return res.status(401).json({ error: 'No token provided' });
     }
   
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    // Verify the token
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
-        return res.status(403).json({ error: 'Invalid or expired token' });
+        // Log specific error details
+        console.error('Token verification error:', err.message);
+        
+        if (err.name === 'TokenExpiredError') {
+          return res.status(403).json({ error: 'Token expired' });
+        }
+        
+        return res.status(403).json({ error: 'Invalid token' });
       }
-      req.userId = user.id;
+  
+      // Attach the decoded user information to the request
+      req.userId = decoded.id;
+      req.userEmail = decoded.email;
       next();
     });
   };
+  
+
+
+
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
