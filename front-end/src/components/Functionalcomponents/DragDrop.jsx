@@ -720,6 +720,7 @@ const DragDrop = () => {
       {section === "Completed" ? "INPROGRESS" : 
        section === "BackLogs" ? "COMPLETED" : 
        section.toUpperCase()}
+        <span className="section-count"> {sections[section].length}</span>
     </h2>
           {(isSearching ? filteredSections[section] : sections[section])
             .length === 0 ? (
@@ -730,8 +731,8 @@ const DragDrop = () => {
                   : section === "TODO"
                   ? "No tasks to do! Add one to get started."
                   : section === "Completed"
-                  ? "No completed tasks yet! Keep going!"
-                  : "No backlog tasks! Stay on track!"}
+                  ? "No In progress tasks yet! Keep going!"
+                  : "No Completed tasks! Stay on track!"}
               </p>
             </div>
           ) : (

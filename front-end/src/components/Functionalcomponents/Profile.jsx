@@ -3,7 +3,8 @@ import "../css/Profile.css";
 import axios from 'axios';
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaEnvelope, FaPhone, FaArrowLeft, FaSignOutAlt } from "react-icons/fa";
-
+import { useContext } from "react";
+import { UserContext } from "../../App";
 const Profile = () => {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState({
@@ -44,9 +45,9 @@ const Profile = () => {
   };
 
   const handleLogout = () => {
-    // Clear the authentication token
+   
     localStorage.removeItem("token");
-    // Navigate to login page
+ 
     navigate('/');
   };
 

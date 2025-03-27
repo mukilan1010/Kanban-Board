@@ -1,4 +1,9 @@
-/* Login.css */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
 .login-container {
   display: flex;
   justify-content: center;
@@ -24,7 +29,7 @@
 }
 
 h2 {
-  color: #ffffff;
+  color: #160202;
   font-size: 26px;
   margin-bottom: 20px;
   font-weight: bold;
@@ -41,7 +46,7 @@ h2 {
 .input-group label {
   display: block;
   font-size: 14px;
-  color: #ddd;
+  color: #0f0303;
   margin-bottom: 5px;
  
   font-weight: bold;

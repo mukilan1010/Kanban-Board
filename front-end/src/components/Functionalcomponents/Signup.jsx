@@ -60,7 +60,7 @@ const Signup = () => {
             <input type="text" id="firstName" placeholder="Enter your name" value={firstName} onChange={e=>{setFN(e.target.value)}} required />
           </div>
           <div className="input-group">
-            <label htmlFor="lastName">First Name</label>
+            <label htmlFor="lastName">Last Name</label>
             <input type="text" id="lastName" placeholder="Enter your lastname" value={lastName} onChange={e=>{setLN(e.target.value)}} required />
           </div>
 
